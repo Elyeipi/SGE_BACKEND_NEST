@@ -1,0 +1,189 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DB_URL")
+}
+
+model Collaborator {
+  id BigInt @id @default(autoincrement())
+  firstname String @db.VarChar(50)
+  lastname String @db.VarChar(50)
+  department String @db.VarChar(50)
+  institution String @db.VarChar(150)
+  ORCID String @db.VarChar(255)
+  primary_email String @db.VarChar(255) @unique
+  secondary_email String @db.VarChar(255) @unique
+  primary_phone String @db.VarChar(50)
+  secondary_phone String @db.VarChar(50)
+  web_url String @db.VarChar(255)
+  address String @db.VarChar(255)
+  
+  country_id BigInt
+  country Country @relation(fields: [country_id], references: [id])
+
+  collab_disciplines Collab_Discipline[]
+  collab_languages Collab_Language[]
+
+  collab_works Collab_Work[]
+}
+
+model Country {
+  id BigInt @id @default(autoincrement())
+  name String @db.VarChar(100)
+
+  collaborators Collaborator[]
+}
+
+model Discipline {
+  id BigInt @id @default(autoincrement())
+  name String @db.VarChar(25) @unique
+
+  collab_disciplines Collab_Discipline[]
+  work_disciplines Work_Discipline[]
+}
+
+model Collab_Discipline{
+  collab_id BigInt
+  discipline_id BigInt
+
+  collaborator Collaborator @relation(fields : [collab_id], references: [id])
+  discipline Discipline @relation(fields : [discipline_id], references: [id])
+
+  @@id([collab_id, discipline_id])
+}
+
+model Language{
+  id BigInt @id @default(autoincrement())
+  name String @db.VarChar(20) @unique
+
+  collab_languages Collab_Language[]
+}
+
+model Collab_Language{
+  collab_id BigInt
+  language_id BigInt
+
+  collaborator Collaborator @relation(fields: [collab_id], references: [id])
+  language Language @relation(fields: [language_id], references: [id])
+
+  @@id([collab_id, language_id])
+}
+
+model Work{
+  id BigInt @id @default(autoincrement())
+  title String @db.VarChar(255)
+  
+  worktype_id Int
+  workType WorkType @relation(fields: [worktype_id], references: [id])
+
+  submission_id BigInt? @unique
+  submission Submission? @relation(fields: [submission_id], references: [id])
+
+  collab_works Collab_Work[]
+
+  work_disciplines Work_Discipline[]
+
+  cited_works Citation[] @relation(name: "cited_article")
+  citing_works Citation[] @relation(name: "citing_article")
+}
+
+model WorkType{
+  id Int @id @default(autoincrement())
+  name String @unique
+
+  works Work[]
+}
+
+model Submission{
+  id BigInt @id @default(autoincrement())
+  reception_date DateTime?
+  decision_date DateTime?
+  limit_decision_date DateTime?
+  decision_delivery_date DateTime?
+  correction_date DateTime?
+  acceptance_date DateTime?
+  publication_date DateTime?
+  
+  state_id Int
+  workState WorkState @relation(fields: [state_id], references: [id])
+
+  work_id BigInt @unique
+  work Work? @relation()
+}
+
+model WorkState{
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(25)
+  submissions Submission[]
+}
+
+model Role{
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(25) @unique
+
+  collab_works Collab_Work[]
+}
+
+model CollaboratorState{
+  id Int @id @default(autoincrement())
+  name String @db.VarChar(25) @unique
+  
+  collab_works Collab_Work[]
+}
+
+model Collab_Work{
+  collab_id BigInt
+  work_id  BigInt
+  state_id Int
+  role_id Int
+
+  collaborator Collaborator @relation(fields: [collab_id], references: [id])
+  work Work @relation(fields: [work_id], references: [id])
+  state CollaboratorState @relation(fields: [state_id], references: [id])
+  role Role @relation(fields: [role_id], references: [id])
+
+  @@id([collab_id, work_id])  
+}
+
+model Work_Discipline{
+  work_id BigInt
+  discipline_id BigInt
+  
+  work Work @relation(fields: [work_id], references: [id])
+  discipline Discipline @relation(fields: [discipline_id], references: [id])
+
+  @@id([work_id, discipline_id])
+}
+
+model Citation{
+  id BigInt @id @default(autoincrement())
+  name String @db.VarChar(255)
+
+  cited_article_id BigInt?
+  citing_article_id BigInt?
+
+  cited_article Work? @relation(fields: [cited_article_id], references: [id], name: "cited_article")
+  citing_article Work? @relation(fields: [citing_article_id], references: [id], name: "citing_article")
+
+  citation_date DateTime
+  source String
+  
+  external_title String?
+  external_authors String?
+  external_journal String? @db.VarChar(50)
+  external_year Int?
+  doi String
+  
+  is_internal Boolean
+}
+

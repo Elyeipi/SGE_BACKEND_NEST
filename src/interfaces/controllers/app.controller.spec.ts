@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { LANGUAGE_REPOSITORY } from 'src/shared/app.constants';
+import { LanguagePrismaRepository } from 'src/application/implementation/LanguagePrismaRepository';
 
 describe('AppController', () => {
   let appController: AppController;
@@ -8,7 +9,12 @@ describe('AppController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        {
+          provide: LANGUAGE_REPOSITORY,
+          useClass: LanguagePrismaRepository
+        }
+      ],
     }).compile();
 
     appController = app.get<AppController>(AppController);
